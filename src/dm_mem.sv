@@ -114,9 +114,13 @@ module dm_mem #(
         cmderror_valid_o = 1'b0;
         cmderror_o       = dm::CmdErrNone;
         state_d          = state_q;
+		`ifndef _VCP // SPT77445
         go               = 1'b0;
+		`endif
         resume           = 1'b0;
+		`ifndef _VCP // SPT77445
         cmdbusy_o        = 1'b1;
+		`endif
 
         case (state_q)
             Idle: begin
@@ -135,6 +139,10 @@ module dm_mem #(
                      !haltreq_i[hartsel_i] &&    halted_q[hartsel_i]) begin
                     state_d = Resume;
                 end
+				
+				`ifdef VCP // SPT77445
+				go = 1'b0;
+				`endif
             end
 
             Go: begin
@@ -151,6 +159,9 @@ module dm_mem #(
                 resume = 1'b1;
                 if (resuming_o[hartsel_i])
                     state_d = Idle;
+				`ifdef VCP // SPT77445
+				go = 1'b0;
+				`endif
             end
 
             CmdExecuting: begin
@@ -161,6 +172,12 @@ module dm_mem #(
                     state_d = Idle;
                 end
             end
+			`ifdef _VCP // SPT77445
+			default: begin
+				cmdbusy_o = 1'b1;
+				go = 1'b0;
+			end
+			`endif
         endcase
 
         // only signal once that cmd is unsupported so that we can clear cmderr
